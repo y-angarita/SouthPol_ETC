@@ -1,9 +1,9 @@
 numpy
 pandas
 matplotlib
+pytest
 
 # if using streamlit app (optional)
-pytest
 streamlit
 
 # if using FastAPI app (optional)
