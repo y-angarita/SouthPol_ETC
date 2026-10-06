@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from etc_model import SOUTHPOL_FILTERS, calculate_exposure
-
+from dataclasses import replace
 
 st.set_page_config(page_title="SouthPol ETC",
                    page_icon="🔭", layout="wide")
@@ -30,17 +30,40 @@ with st.sidebar:
 
     st.header("Sky and detector")
 
-    instrument = SOUTHPOL_FILTERS[band]
+    instrument_base = SOUTHPOL_FILTERS[band]
 
     sky_mag = st.number_input("Sky brightness [mag arcsec⁻²]", min_value=10.0,
-                              max_value=30.0, value=float(instrument.sky_mag),
-                              step=0.05)
-    gain_e_per_adu = st.number_input("Gain [e⁻ adu⁻¹]", min_value=0.0, max_value=10.0,
-    								 value=float(instrument.gain_e_per_adu), step=0.01)
-    						
+                              max_value=30.0, value=float(instrument_base.sky_mag),
+                              step=0.05, key="sky_mag")
+                              
+    gain_e_per_adu = st.number_input("Gain [e⁻ adu⁻¹]", min_value=0.001, max_value=10.0,
+    								 value=(0.50 if instrument_base.gain_e_per_adu is None
+    								 else float(instrument_base.gain_e_per_adu)),
+    								 step=0.01, format="%.3f", key="gain_e_per_adu")
+    								 
+    full_well_e = st.number_input("Full well or efficiency [e⁻ pixel⁻¹]", min_value=1.0,
+    							  max_value=1_000_000.0, value=(100_000.0
+    							  if instrument_base.full_well_e is None
+    							  else float(instrument_base.full_well_e)),
+    							  step=1_000.0, format="%.0f", key="full_well_e")
+
+	linear_limit_adu = st.number_input("Linearity limit [ADU pixel⁻¹]", min_value=1.0,
+									   max_value=10_000_000.0, value=(50_000.0 if
+									   instrument_base.linear_limit_adu is None
+									   else float(instrument_base.linear_limit_adu)),
+									   step=1_000.0, format="%.0f",
+									   key="linear_limit_adu")
+    								 
+	instrument = replace(instrument_base, 
+						 sky_mag=sky_mag, 
+						 gain_e_per_adu=gain_e_per_adu,
+						 full_well_e=full_well_e,
+						 linear_limit_adu=linear_limit_adu,
+						 )
+	    						
     st.caption(f"Pixel scale: {instrument.pixel_scale:.4f} arcsec pixel⁻¹")
     st.caption(f"Read noise: {instrument.read_noise:.2f} e⁻ pixel⁻¹")
-
+	
 result = calculate_exposure(magnitude=magnitude,
                             exposure_time=exposure_time,
                             seeing=seeing,
@@ -78,6 +101,7 @@ st.subheader("Observation summary")
 summary = {"Band": row["band"],
            "Stellar magnitude": f"{row['magnitude']:.2f} mag",
            "Exposure time": f"{row['exposure_time_s']:.1f} s",
+           "Gain": f"{gain_e_per_adu:.3f} e⁻ ADU⁻¹",
            # "Number of exposures": f"{int(row['n_exposures'])}",
            "Seeing": f"{row['seeing_arcsec']:.2f} arcsec",
            "Aperture size": f"{row['npix']:.2f} pixel",
