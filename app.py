@@ -41,13 +41,13 @@ with st.sidebar:
     								 else float(instrument_base.gain_e_per_adu)),
     								 step=0.01, format="%.3f", key="gain_e_per_adu")
  
- '''   								 
+	'''   								 
     full_well_e = st.number_input("Full well [e⁻ pixel⁻¹]", min_value=1.0,
     							  max_value=1_000_000.0, value=(100_000.0
     							  if instrument_base.full_well_e is None
     							  else float(instrument_base.full_well_e)),
     							  step=1_000.0, format="%.0f", key="full_well_e")
-'''    							  
+	'''    							  
     linear_limit_adu = st.number_input("Linearity limit [ADU pixel⁻¹]", min_value=1.0,
 									   max_value=10_000_000.0, value=(50_000.0 if
 									   instrument_base.linear_limit_adu is None
