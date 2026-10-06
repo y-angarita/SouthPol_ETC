@@ -83,7 +83,7 @@ metric_1, metric_2, metric_3, metric_4, metric_5 = st.columns(5)
 
 metric_1.metric("SNR per image", f"{row['snr']:,.1f}")
 metric_2.metric("SNR all HWPP combined", f"{row['snr_combined']:,.1f}")
-metric_3.metric("σP per image", f"{row['sigma_P_percent']:.4f} %")
+metric_3.metric("Sigma P per image", f"{row['sigma_P_percent']:.4f} %")
 metric_4.metric("Peak level", f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹")
 
 if np.isfinite(row["peak_total_adu"]):
