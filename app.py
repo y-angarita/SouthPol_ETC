@@ -81,7 +81,7 @@ else:
 
 metric_1, metric_2, metric_3, metric_4 = st.columns(4)
 
-metric_1.metric("S/N per sequence", f"{row['snr']:,.1f}")
+metric_1.metric("SNR per sequence", f"{row['snr']:,.1f}")
 metric_2.metric("σP per sequence", f"{row['sigma_P_percent']:.4f} %")
 metric_3.metric("Peak level", f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹")
 
@@ -104,7 +104,7 @@ summary = {"Band": row["band"],
            "Integrated stellar signal": f"{row['stellar_electrons']:,.0f} e⁻",
            "Peak stellar signal": f"{row['peak_stellar_electrons']:,.0f} e⁻ pixel⁻¹",
            "Peak object + sky": f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹",
-           "Full-well fraction": f"{row['full_well_fraction']:.1f} ({row['full_well_fraction']:.0f})",
+           "Full-well fraction": f"{row['full_well_fraction']:.1f}",
            "Linearity fraction (i.e., minimum number of exposures)": f"{row['linearity_fraction']:.1f} ({row['linearity_fraction']:.0f})",
            "SNR one image": f"{row['snr']:,.1f}",
            "SNR, all HWPPs combined": f"{row['snr_combined']:,.1f}",
@@ -138,8 +138,8 @@ with plot_col_1:
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Individual exposure time [s]")
-    ax.set_ylabel("S/N")
-    ax.set_title("S/N versus exposure time")
+    ax.set_ylabel("SNR")
+    ax.set_title("SNR versus exposure time")
     ax.grid(alpha=0.3, which="both")
     st.pyplot(fig)
 
@@ -156,8 +156,8 @@ with plot_col_2:
     ax.axvline(magnitude, color="black", ls="--", alpha=0.7)
     ax.set_yscale("log")
     ax.set_xlabel(f"{band} magnitude [mag]")
-    ax.set_ylabel("S/N")
-    ax.set_title("S/N versus magnitude")
+    ax.set_ylabel("SNR")
+    ax.set_title("SNR versus magnitude")
     ax.grid(alpha=0.3, which="both")
     st.pyplot(fig)
 
@@ -174,12 +174,21 @@ with plot_col_3:
 
     if instrument.full_well_e is not None:
         ax.axhline(instrument.full_well_e, color="black", ls="--", label="Full-well limit")
+        
+    if instrument.linear_limit_adu is not None:
+        ax.axhline(instrument.linear_limit_adu, color="tab:orange", ls="--",
+                   label="Linearity limit (Saturation)")
+
+    if instrument.gain_e_per_adu is not None:
+        if instrument.full_well_e is not None:
+            full_well_adu = instrument.full_well_e / instrument.gain_e_per_adu
+            ax.axhline(full_well_adu, color="tab:red", ls=":", label="Full well limit")
 
     ax.axvline(exposure_time, color="black", ls=":", alpha=0.7)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Individual exposure time [s]")
-    ax.set_ylabel("Peak object + sky [e⁻ pixel⁻¹]")
+    ax.set_ylabel("Peak object + sky [ADU pixel⁻¹]")
     ax.set_title("Peak level versus exposure time")
     ax.grid(alpha=0.3, which="both")
     ax.legend()
@@ -189,7 +198,7 @@ st.divider()
 
 st.subheader("Model notes")
 st.markdown("""
-- The S/N and (sigma_P) calculations reproduce the spreadsheet model.
+- The SNR and (sigma_P) calculations reproduce the spreadsheet model.
 - Peak counts are estimated from a Gaussian PSF using the input seeing.
 - Saturation is assessed for each individual frame, not the total time across multiple frames.
 - Detector gain, full well, and linearity limits must be replaced by verified SouthPol detector values before operational use.
