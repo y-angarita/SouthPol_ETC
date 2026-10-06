@@ -79,16 +79,17 @@ elif "SATURATION" in warning:
 else:
     st.warning(warning)
 
-metric_1, metric_2, metric_3, metric_4 = st.columns(4)
+metric_1, metric_2, metric_3, metric_4, metric_5 = st.columns(5)
 
-metric_1.metric("SNR per sequence", f"{row['snr']:,.1f}")
-metric_2.metric("σP per sequence", f"{row['sigma_P_percent']:.4f} %")
-metric_3.metric("Peak level", f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹")
+metric_1.metric("SNR per image", f"{row['snr']:,.1f}")
+metric_2.metric("SNR all HWPP combined", f"{row['snr_combined']:,.1f}")
+metric_3.metric("σP per image", f"{row['sigma_P_percent']:.4f} %")
+metric_4.metric("Peak level", f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹")
 
 if np.isfinite(row["peak_total_adu"]):
-    metric_4.metric("Peak counts", f"{row['peak_total_adu']:,.0f} ADU pixel⁻¹")
+    metric_5.metric("Peak counts", f"{row['peak_total_adu']:,.0f} ADU pixel⁻¹")
 else:
-    metric_4.metric("Peak counts", "Gain not set")
+    metric_5.metric("Peak counts", "Gain not set")
 
 st.subheader("Observation summary")
 
@@ -108,7 +109,7 @@ summary = {"Band": row["band"],
            "Linearity fraction (i.e., minimum number of exposures)": f"{row['linearity_fraction']:.1f} ({row['linearity_fraction']:.0f})",
            "SNR one image": f"{row['snr']:,.1f}",
            "SNR, all HWPPs combined": f"{row['snr_combined']:,.1f}",
-           "σP": f"{row['sigma_P_percent']:.4f} %",
+           "Sigma P": f"{row['sigma_P_percent']:.4f} %",
            "Detector status": row["saturation_warning"],
 }
 
@@ -180,7 +181,7 @@ with plot_col_3:
     if instrument.gain_e_per_adu is not None:
         if instrument.full_well_e is not None:
             full_well_adu = instrument.full_well_e / instrument.gain_e_per_adu
-            ax.axhline(full_well_adu, color="tab:red", ls=":", label="Full well limit")
+            ax.axhline(full_well_adu, color="tab:black", ls=":", label="Full well limit")
 
     ax.axvline(exposure_time, color="black", ls=":", alpha=0.7)
     ax.set_xscale("log")
