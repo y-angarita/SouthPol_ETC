@@ -181,7 +181,7 @@ with plot_col_3:
     if instrument.gain_e_per_adu is not None:
         if instrument.full_well_e is not None:
             full_well_adu = instrument.full_well_e / instrument.gain_e_per_adu
-            ax.axhline(full_well_adu, color="tab:black", ls=":", label="Full well limit")
+            ax.axhline(full_well_adu, color="black", ls=":", label="Full well limit")
 
     ax.axvline(exposure_time, color="black", ls=":", alpha=0.7)
     ax.set_xscale("log")
