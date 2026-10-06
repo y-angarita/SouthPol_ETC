@@ -1,6 +1,6 @@
 # SouthPol Exposure-Time Calculator
 
-A Python-based exposure-time calculator (ETC) for **SouthPol** optical polarimetric observations. The routine is based on the ETC developed by Prof. Antonio Mario Magalh\~aes (Copyright April 2026).
+A Python-based exposure-time calculator (ETC) for **SouthPol** optical polarimetric observations. The routine is based on the ETC developed by Prof. Antonio Mario Magalhaes (Copyright April 2026).
 
 The calculator estimates:
 
