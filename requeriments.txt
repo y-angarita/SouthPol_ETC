@@ -1,10 +1,8 @@
+streamlit
 numpy
 pandas
 matplotlib
 pytest
-
-# if using streamlit app (optional)
-streamlit
 
 # if using FastAPI app (optional)
 fastapi
