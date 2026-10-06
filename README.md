@@ -55,6 +55,7 @@ southpol_etc/
 
 ```bash
 git clone <your-repository-url>
+
 cd SouthPol_ETC
 ```
 
