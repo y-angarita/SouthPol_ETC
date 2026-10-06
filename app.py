@@ -1,6 +1,16 @@
+import os
+import sys
+from pathlib import Path
+
+import streamlit as st
+
+st.write("Python:", sys.version)
+st.write("App directory:", Path(__file__).parent)
+st.write("requirements exists:", (Path(__file__).parent / "requirements.txt").exists())
+
 import numpy as np
 import matplotlib.pyplot as plt
-import streamlit as st
+# import streamlit as st
 
 from etc_model import SOUTHPOL_FILTERS, calculate_exposure
 
@@ -170,7 +180,7 @@ st.divider()
 
 st.subheader("Model notes")
 st.markdown("""
-- The S/N and (\sigma_P) calculations reproduce the spreadsheet model.
+- The S/N and (sigma_P) calculations reproduce the spreadsheet model.
 - Peak counts are estimated from a Gaussian PSF using the input seeing.
 - Saturation is assessed for each individual frame, not the total time across multiple frames.
 - Detector gain, full well, and linearity limits must be replaced by verified SouthPol detector values before operational use.
