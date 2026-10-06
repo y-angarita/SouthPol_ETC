@@ -264,11 +264,11 @@ Here:
 
 For $$N_{\rm plate}$$ plate positions:
 
-$$\sigma_P[%]=\frac{100}{\sqrt{N_{\rm plate}}\,SNR}.$$
+$$\sigma_P[\%]=\frac{100}{\sqrt{N_{\rm plate}} SNR}$$.
 
 For the default eight-position configuration:
 
-$$\sigma_P[%]=\frac{100}{\sqrt{8}\,SNR}$$
+$$\sigma_P[\%]=\frac{100}{\sqrt{8} SNR}$$.
 
 ---
 
