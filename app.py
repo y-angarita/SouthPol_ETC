@@ -1,16 +1,6 @@
-import os
-import sys
-from pathlib import Path
-
-import streamlit as st
-
-st.write("Python:", sys.version)
-st.write("App directory:", Path(__file__).parent)
-st.write("requirements exists:", (Path(__file__).parent / "requirements.txt").exists())
-
 import numpy as np
 import matplotlib.pyplot as plt
-# import streamlit as st
+import streamlit as st
 
 from etc_model import SOUTHPOL_FILTERS, calculate_exposure
 
