@@ -7,14 +7,14 @@ The calculator estimates:
 - Stellar photoelectron rate
 - Sky-background rate per pixel
 - Total detected stellar electrons
-- Signal-to-noise ratio (S/N)
-- Polarimetric precision, \(\sigma_P\)
+- Signal-to-noise ratio (SNR)
+- Polarimetric precision, $$\sigma_P$$
 - Gaussian-PSF peak pixel level
 - Peak object-plus-sky electrons and ADU
 - Detector full-well and linearity fractions
 - Warnings when an individual exposure may be close to or above detector limits
 
-The numerical S/N and polarimetric-precision calculation is based on the supplied SouthPol spreadsheet for half-wave-plate polarimetry. The code is intended to make that calculation reproducible, testable, and usable interactively in notebooks or through a web interface.
+The numerical SNR and polarimetric-precision calculation is based on the supplied SouthPol spreadsheet for half-wave-plate polarimetry. The code is intended to make that calculation reproducible, testable, and usable interactively in notebooks or through a web interface.
 
 > **Important:** This tool is an observing-planning calculator. Its predictions depend on throughput, sky brightness, seeing, detector gain, full well, linearity, and calibration assumptions. Validate the adopted parameters against the current instrument configuration before operational use.
 
@@ -24,12 +24,12 @@ The numerical S/N and polarimetric-precision calculation is based on the supplie
 
 - Supports scalar values or NumPy arrays for magnitude, exposure time, and seeing.
 - Returns a `pandas.DataFrame`, making it convenient to inspect, export, plot, or use in notebooks.
-- Computes the SouthPol S/N and sigma_P.
+- Computes the SouthPol SNR and sigma_P.
 - Estimates peak counts using a 2D circular Gaussian PSF.
 - Evaluates saturation for an **individual exposure**, rather than only for the total observing time.
 - Includes plotting support for:
-  - S/N vs. exposure time
-  - S/N vs. magnitude
+  - SNR vs. exposure time
+  - SNR vs. magnitude
   - Peak detector level vs. exposure time
 - Can be used as the numerical backend for a Streamlit web application.
 
@@ -117,8 +117,8 @@ Extract the single result row:
 ```python
 row = result.iloc
 
-print(f"S/N, one image: {row['snr']:.1f}")
-print(f"S/N, all half-wave plate rotations combined: {row['snr_combined']:.1f}")
+print(f"SNR, one image: {row['snr']:.1f}")
+print(f"SNR, all half-wave plate rotations combined: {row['snr_combined']:.1f}")
 print(f"Sigma P: {row['sigma_P_percent']:.4f} %")
 print(f"Peak detector level: {row['peak_total_electrons']:.0f} e- / pixel")
 print(f"Detector warning: {row['saturation_warning']}")
@@ -163,8 +163,8 @@ def print_etc_summary(result):
         print(f"Peak object + sky:         {row['peak_total_adu']:,.0f} ADU pixel^-1")
 
     print("\nPolarimetric performance")
-    print(f"S/N, one image:            {row['snr']:,.1f}")
-    print(f"S/N, all HWPP combined:    {row['snr_combined']:,.1f}")
+    print(f"SNR, one image:            {row['snr']:,.1f}")
+    print(f"SNR, all HWPP combined:    {row['snr_combined']:,.1f}")
     print(f"Polarization precision:    {row['sigma_P_percent']:.4f} %")
 
     print("\nDetector safety")
@@ -231,7 +231,7 @@ $$N_{\rm pix}=\left(\frac{\mathrm{seeing}}{\mathrm{pixel\ scale}}\right)^2.$$
 The stellar count rate is:
 
 $$
-\frac{dN_\star}{dt}=Q\cdot10^{-0.4(m+39.39)}\cdot\frac{\pi}{4}\cdotD^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdot\frac{1}{2}.$$
+\frac{dN_\star}{dt}=Q\cdot10^{-0.4(m+39.39)}\cdot\frac{\pi}{4}\cdot D^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdot\frac{1}{2}.$$
 
 where:
 
@@ -243,38 +243,38 @@ where:
 
 ### Sky electron rate per pixel
 
-$$\frac{dN_{\rm sky}}{dt\,{\rm pix}}=Q\cdot10^{-0.4(\mu_{\rm sky}+38.52)}\cdot\frac{\pi}{4}\cdotD^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdots^2,$$
+$$\frac{dN_{\rm sky}}{dt\,{\rm pix}}=Q\cdot10^{-0.4(\mu_{\rm sky}+38.52)}\cdot\frac{\pi}{4}\cdot D^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdot s^2,$$
 
-where \(\mu_{\rm sky}\) is the sky brightness in mag arcsec\(^{-2}\), and \(s\) is the pixel scale in arcsec pixel\(^{-1}\).
+where $$\mu_{\rm sky}$$ is the sky brightness in mag arcsec$$^{-2}$$, and $$s$$ is the pixel scale in arcsec pixel$$^{-1}$$.
 
 ### Signal-to-noise ratio
 
-The S/N expression implemented from the spreadsheet is:
+The SNR expression implemented from the spreadsheet is:
 
-$$S/N=\frac{\left(dN_\star/dt\right)t}{\sqrt{\left(dN_\star/dt\right)t+2N_{\rm pix}\left[
+$$SNR=\frac{\left(dN_\star/dt\right)t}{\sqrt{\left(dN_\star/dt\right)t+2N_{\rm pix}\left[
 \left(dN_{\rm sky}/dt/{\rm pix}\right)t+R^2\right]}}.$$
 
 Here:
 
-- \(t\) is the individual exposure time;
-- \(R\) is read noise in e\(^{-}\) pixel\(^{-1}\);
+- $$t$$ is the individual exposure time;
+- $$R$$ is read noise in e$$^{-}$$ pixel$$^{-1}$$;
 - the factor of 2 is retained exactly from the original spreadsheet model.
 
 ### Polarization precision
 
-For \(N_{\rm plate}\) plate positions:
+For $$N_{\rm plate}$$ plate positions:
 
-$$\sigma_P[\%]=\frac{100}{\sqrt{N_{\rm plate}}\,S/N}.$$
+$$\sigma_P[%]=\frac{100}{\sqrt{N_{\rm plate}}\,SNR}.$$
 
 For the default eight-position configuration:
 
-$$\sigma_P[\%]=\frac{100}{\sqrt{8}\,S/N}$$
+$$\sigma_P[%]=\frac{100}{\sqrt{8}\,SNR}$$
 
 ---
 
 ## Peak-count calculation
 
-The original spreadsheet calculates integrated source signal, S/N, and \(\sigma_P\), but it does not include a central-pixel peak calculation.
+The original spreadsheet calculates integrated source signal, SNR, and $$\sigma_P$$, but it does not include a central-pixel peak calculation.
 
 This ETC additionally estimates the peak count level from a circular two-dimensional Gaussian PSF.
 
@@ -286,11 +286,11 @@ The fraction of the total stellar flux expected in the central pixel is approxim
 
 $$f_{\rm peak}=\frac{s^2}{2\pi\sigma_{\rm PSF}^2},$$
 
-where \(s\) is the pixel scale in arcsec pixel\(^{-1}\).
+where $$s$$ is the pixel scale in arcsec pixel$$^{-1}$$.
 
 Thus:
 
-$$N_{\rm peak,\star}=N_{\rm object}\cdotf_{\rm peak}.$$
+$$N_{\rm peak,\star}=N_{\rm object}\cdot f_{\rm peak}.$$
 
 The predicted peak object-plus-sky signal is:
 
@@ -319,18 +319,18 @@ The predicted peak is therefore most useful as a conservative planning diagnosti
 The ETC checks two detector limits when they are configured:
 
 1. **Full-well limit**
-   - Defined in e\(^{-}\) pixel\(^{-1}\).
+   - Defined in e$$^{-}$$ pixel$$^{-1}$$.
    - A warning is issued when the estimated peak object-plus-sky electrons approach or exceed the limit.
 
 2. **Linearity limit**
-   - Defined in ADU pixel\(^{-1}\).
+   - Defined in ADU pixel$$^{-1}$$.
    - A warning is issued when the peak ADU approaches or exceeds the configured limit.
 
 The default warning threshold is 90% of the selected limit:
 
 $$f_{\rm warning} = 0.90.$$
 
-A saturation warning refers to **one individual frame**. If a total observing sequence is divided into shorter exposures, the S/N of the combined sequence may be similar, but the peak level and saturation risk per frame are lower.
+A saturation warning refers to **one individual frame**. If a total observing sequence is divided into shorter exposures, the SNR of the combined sequence may be similar, but the peak level and saturation risk per frame are lower.
 
 > Do not consider the saturation configuration operational until `gain_e_per_adu`, `full_well_e`, and `linear_limit_adu` have been replaced with verified SouthPol detector values.
 
@@ -394,7 +394,7 @@ The following values should be determined independently for each filter and obse
 
 ## Plotting examples
 
-### S/N versus exposure time
+### SNR versus exposure time
 
 ```python
 import numpy as np
@@ -417,13 +417,13 @@ plt.plot(curve["exposure_time_s"], curve["snr"])
 plt.xscale("log")
 plt.yscale("log")
 plt.xlabel("Individual exposure time [s]")
-plt.ylabel("S/N")
-plt.title("SouthPol S/N versus exposure time")
+plt.ylabel("SNR")
+plt.title("SouthPol SNR versus exposure time")
 plt.grid(alpha=0.3, which="both")
 plt.show()
 ```
 
-### S/N versus stellar magnitude
+### SNR versus stellar magnitude
 
 ```python
 magnitudes = np.linspace(8.0, 22.0, 300)
@@ -439,8 +439,8 @@ plt.figure(figsize=(7, 5))
 plt.plot(curve["magnitude"], curve["snr"])
 plt.yscale("log")
 plt.xlabel("V magnitude [mag]")
-plt.ylabel("S/N")
-plt.title("SouthPol S/N versus magnitude")
+plt.ylabel("SNR")
+plt.title("SouthPol SNR versus magnitude")
 plt.grid(alpha=0.3, which="both")
 plt.show()
 ```
@@ -492,11 +492,11 @@ should reproduce approximately:
 
 | Quantity | Expected value |
 |---|---:|
-| \(N_{\rm pix}\) | 10.44509979 |
-| Stellar rate | 8156.271299 e\(^{-}\) s\(^{-1}\) |
-| Sky rate per pixel | 0.501154411 e\(^{-}\) s\(^{-1}\) pixel\(^{-1}\) |
-| S/N | 1563.081522 |
-| \(\sigma_P\) | 0.022618999 % |
+| $$N_{\rm pix}$$ | 10.44509979 |
+| Stellar rate | 8156.271299 e$$^{-}$$ s$$^{-1}$$ |
+| Sky rate per pixel | 0.501154411 e$$^{-}$$ s$$^{-1}$$ pixel$$^{-1}$$ |
+| SNR | 1563.081522 |
+| $$\sigma_P$$ | 0.022618999 % |
 
 Run the tests with:
 
@@ -550,17 +550,17 @@ The app should provide controls for:
 
 The displayed results should include:
 
-- S/N per sequence
-- Combined S/N
-- \(\sigma_P\) per sequence
-- Combined \(\sigma_P\)
+- SNR per sequence
+- Combined SNR
+- $$\sigma_P$$ per sequence
+- Combined $$\sigma_P$$
 - Integrated source electrons
 - Peak source electrons per pixel
 - Peak object-plus-sky electrons per pixel
 - Peak ADU per pixel
 - Full-well fraction
 - Detector warning
-- S/N, magnitude, and peak-count plots
+- SNR, magnitude, and peak-count plots
 
 ---
 
@@ -569,18 +569,18 @@ The displayed results should include:
 | Quantity | Unit |
 |---|---|
 | Magnitude | mag |
-| Sky brightness | mag arcsec\(^{-2}\) |
+| Sky brightness | mag arcsec$$^{-2}$$ |
 | Exposure time | s |
 | Seeing FWHM | arcsec |
-| Pixel scale | arcsec pixel\(^{-1}\) |
-| Stellar count rate | e\(^{-}\) s\(^{-1}\) |
-| Sky count rate | e\(^{-}\) s\(^{-1}\) pixel\(^{-1}\) |
-| Integrated object signal | e\(^{-}\) |
-| Peak signal | e\(^{-}\) pixel\(^{-1}\) |
-| Peak counts | ADU pixel\(^{-1}\) |
-| Gain | e\(^{-}\) ADU\(^{-1}\) |
+| Pixel scale | arcsec pixel$$^{-1}$$ |
+| Stellar count rate | e$$^{-}$$ s$$^{-1}$$ |
+| Sky count rate | e$$^{-}$$ s$$^{-1}$$ pixel$$^{-1}$$ |
+| Integrated object signal | e$$^{-}$$ |
+| Peak signal | e$$^{-}$$ pixel$$^{-1}$$ |
+| Peak counts | ADU pixel$$^{-1}$$ |
+| Gain | e$$^{-}$$ ADU$$^{-1}$$ |
 | Polarization precision | % |
-| S/N | dimensionless |
+| SNR | dimensionless |
 
 ---
 
@@ -609,9 +609,9 @@ The displayed results should include:
 - Permit user-selected aperture radii or encircled-energy fractions.
 - Add a point-source versus extended-source option.
 - Add an inverse ETC mode:
-  - Required exposure time for a target S/N.
-  - Required exposure time for a target \(\sigma_P\).
-  - Limiting magnitude for a specified S/N and exposure time.
+  - Required exposure time for a target SNR.
+  - Required exposure time for a target $$\sigma_P$$.
+  - Limiting magnitude for a specified SNR and exposure time.
 - Add CSV export of results and figures.
 - Add a version identifier and record all instrument parameters used for each calculation.
 - Add automated tests for all spreadsheet reference cases.
