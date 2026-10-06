@@ -40,13 +40,7 @@ with st.sidebar:
     								 value=(0.50 if instrument_base.gain_e_per_adu is None
     								 else float(instrument_base.gain_e_per_adu)),
     								 step=0.01, format="%.3f", key="gain_e_per_adu")
-    '''   								 
-    full_well_e = st.number_input("Full well [e⁻ pixel⁻¹]", min_value=1.0,
-    							  max_value=1_000_000.0, value=(100_000.0
-    							  if instrument_base.full_well_e is None
-    							  else float(instrument_base.full_well_e)),
-    							  step=1_000.0, format="%.0f", key="full_well_e")
-    '''    							  
+    
     linear_limit_adu = st.number_input("Linearity limit [ADU pixel⁻¹]", min_value=1.0,
 									   max_value=10_000_000.0, value=(50_000.0 if
 									   instrument_base.linear_limit_adu is None
@@ -111,7 +105,7 @@ summary = {"Band": row["band"],
            "Peak stellar signal": f"{row['peak_stellar_electrons']:,.0f} e⁻ pixel⁻¹",
            "Peak object + sky": f"{row['peak_total_electrons']:,.0f} e⁻ pixel⁻¹",
            "Full-well fraction": f"{row['full_well_fraction']:.1f} ({row['full_well_fraction']:.0f})",
-           "Linearity fraction (i.e., minimum number of exposures)": f"{row['full_well_fraction']:.1f} ({row['linearity_fraction']:.0f})",
+           "Linearity fraction (i.e., minimum number of exposures)": f"{row['linearity_fraction']:.1f} ({row['linearity_fraction']:.0f})",
            "SNR one image": f"{row['snr']:,.1f}",
            "SNR, all HWPPs combined": f"{row['snr_combined']:,.1f}",
            "σP": f"{row['sigma_P_percent']:.4f} %",
