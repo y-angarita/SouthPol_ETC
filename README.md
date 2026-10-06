@@ -1,6 +1,6 @@
 # SouthPol Exposure-Time Calculator
 
-A Python-based exposure-time calculator (ETC) for **SouthPol** optical polarimetric observations.
+A Python-based exposure-time calculator (ETC) for **SouthPol** optical polarimetric observations. The routine is based on the ETC developed by Prof. Antonio Mario Magalhaes (Copyright April 2026).
 
 The calculator estimates:
 
@@ -24,13 +24,13 @@ The numerical S/N and polarimetric-precision calculation is based on the supplie
 
 - Supports scalar values or NumPy arrays for magnitude, exposure time, and seeing.
 - Returns a `pandas.DataFrame`, making it convenient to inspect, export, plot, or use in notebooks.
-- Computes the SouthPol spreadsheet-style S/N and \(\sigma_P\).
+- Computes the SouthPol S/N and sigma_P.
 - Estimates peak counts using a 2D circular Gaussian PSF.
 - Evaluates saturation for an **individual exposure**, rather than only for the total observing time.
 - Includes plotting support for:
-  - S/N versus exposure time
-  - S/N versus magnitude
-  - Peak detector level versus exposure time
+  - S/N vs. exposure time
+  - S/N vs. magnitude
+  - Peak detector level vs. exposure time
 - Can be used as the numerical backend for a Streamlit web application.
 
 ---
@@ -55,7 +55,7 @@ southpol_etc/
 
 ```bash
 git clone <your-repository-url>
-cd southpol_etc
+cd SouthPol_ETC
 ```
 
 ### 2. Create a Python environment
@@ -87,6 +87,8 @@ pandas
 matplotlib
 streamlit
 pytest
+fastapi
+uvicorn[standard]
 ```
 
 ---
@@ -98,14 +100,13 @@ Import an instrument configuration and run one ETC calculation:
 ```python
 from etc_model import SOUTHPOL_FILTERS, calculate_southpol
 
-result = calculate_southpol(
-    magnitude=12.0,
-    exposure_time=300.0,
-    seeing=1.2,
-    instrument=SOUTHPOL_FILTERS["V"],
-    band="V",
-    n_exposures=1,
-)
+result = calculate_southpol(magnitude=12.0,
+							exposure_time=300.0,
+							seeing=1.2,
+							instrument=SOUTHPOL_FILTERS["V"],
+							band="V",
+							n_exposures=1,
+							)
 
 print(result)
 ```
@@ -115,7 +116,8 @@ Extract the single result row:
 ```python
 row = result.iloc
 
-print(f"S/N: {row['snr']:.1f}")
+print(f"S/N, one image: {row['snr']:.1f}")
+print(f"S/N, all half-wave plate rotations combined: {row['snr_combined']:.1f}")
 print(f"Sigma P: {row['sigma_P_percent']:.4f} %")
 print(f"Peak detector level: {row['peak_total_electrons']:.0f} e- / pixel")
 print(f"Detector warning: {row['saturation_warning']}")
@@ -132,9 +134,7 @@ import numpy as np
 def print_etc_summary(result):
     """Print a readable summary for a single-row SouthPol ETC result."""
     if len(result) != 1:
-        raise ValueError(
-            "print_etc_summary expects a DataFrame containing one row."
-        )
+        raise ValueError("print_etc_summary expects a DataFrame containing one row.")
 
     row = result.iloc
 
@@ -150,56 +150,29 @@ def print_etc_summary(result):
 
     print("\nSignal and background")
     print(f"Aperture size:             {row['npix']:.2f} pixel")
-    print(
-        f"Stellar count rate:        "
-        f"{row['stellar_rate_e_per_s']:,.2f} e- s^-1"
-    )
-    print(
-        f"Sky count rate:            "
-        f"{row['sky_rate_e_per_s_per_pix']:,.4f} "
-        f"e- s^-1 pixel^-1"
-    )
-    print(
-        f"Integrated stellar signal: "
-        f"{row['object_electrons']:,.0f} e-"
-    )
+    print(f"Stellar count rate:        {row['stellar_rate_e_per_s']:,.2f} e- s^-1")
+    print(f"Sky count rate:            {row['sky_rate_e_per_s_per_pix']:,.4f} e- s^-1 pixel^-1")
+    print(f"Integrated stellar signal: {row['object_electrons']:,.0f} e-")
 
     print("\nPeak level per exposure")
-    print(
-        f"Peak stellar signal:       "
-        f"{row['peak_stellar_electrons']:,.0f} e- pixel^-1"
-    )
-    print(
-        f"Peak object + sky:         "
-        f"{row['peak_total_electrons']:,.0f} e- pixel^-1"
-    )
+    print(f"Peak stellar signal:       {row['peak_stellar_electrons']:,.0f} e- pixel^-1")
+    print(f"Peak object + sky:         {row['peak_total_electrons']:,.0f} e- pixel^-1")
 
     if np.isfinite(row["peak_total_adu"]):
-        print(
-            f"Peak object + sky:         "
-            f"{row['peak_total_adu']:,.0f} ADU pixel^-1"
-        )
+        print(f"Peak object + sky:         {row['peak_total_adu']:,.0f} ADU pixel^-1")
 
     print("\nPolarimetric performance")
-    print(f"S/N:                       {row['snr']:,.1f}")
-    print(
-        f"Polarization precision:    "
-        f"{row['sigma_P_percent']:.4f} %"
-    )
+    print(f"S/N, one image:            {row['snr']:,.1f}")
+    print(f"S/N, all HWPP combined:    {row['snr_combined']:,.1f}")
+    print(f"Polarization precision:    {row['sigma_P_percent']:.4f} %")
 
     print("\nDetector safety")
 
     if np.isfinite(row["full_well_fraction"]):
-        print(
-            f"Full-well fraction:        "
-            f"{100.0 * row['full_well_fraction']:.1f} %"
-        )
+        print(f"Full-well fraction:        {row['full_well_fraction']:.1f}")
 
     if np.isfinite(row["linearity_fraction"]):
-        print(
-            f"Linearity-limit fraction:  "
-            f"{100.0 * row['linearity_fraction']:.1f} %"
-        )
+        print(f"Linearity-limit fraction:  {row['linearity_fraction']:.1f}")
 
     print(f"Detector status:           {row['saturation_warning']}")
     print("=" * 52)
@@ -224,89 +197,52 @@ print_etc_summary(result)
 | `seeing` | FWHM of the point-spread function | arcsec |
 | `band` | Filter label, such as `V` | — |
 | `n_exposures` | Number of exposures to combine | — |
+| `gain_e_per_adu` | Detector conversion gain | e^{-} ADU^{-1} |
 
 ### Instrument parameters
 
 | Parameter | Description | Unit |
 |---|---|---|
-| `throughput` | Total system throughput \(Q\) | dimensionless |
-| `pixel_scale` | Plate scale | arcsec pixel\(^{-1}\) |
-| `read_noise` | RMS readout noise per pixel | e\(^{-}\) pixel\(^{-1}\) |
-| `sky_mag` | Sky brightness | mag arcsec\(^{-2}\) |
+| `throughput` | Total system throughput or efficiency Q | dimensionless |
+| `pixel_scale` | Plate scale | arcsec pixel^{-1} |
+| `read_noise` | RMS readout noise per pixel | e^{-} pixel^{-1} |
+| `sky_mag` | Sky brightness | mag arcsec^{-2} |
 | `telescope_diameter` | Effective telescope diameter used in the model | cm |
 | `filter_width` | Effective filter bandwidth | Angstrom |
 | `n_plate` | Number of polarimetric plate positions | — |
-| `gain_e_per_adu` | Detector conversion gain | e\(^{-}\) ADU\(^{-1}\) |
-| `full_well_e` | Approximate detector full-well capacity | e\(^{-}\) pixel\(^{-1}\) |
-| `linear_limit_adu` | Detector linearity limit | ADU pixel\(^{-1}\) |
+| `full_well_e` | Approximate detector full-well capacity | e^{-} pixel^{-1} |
+| `linear_limit_adu` | Detector linearity limit | ADU pixel^{-1} |
 
 ---
 
 ## SouthPol calculation
 
-The model uses the same equations as the original SouthPol spreadsheet.
+The model uses the same equations as the original SouthPol ETC from Prof. Antonio Mario Magalhaes (Copyright April 2026); See [notes PDF](https://github.com/y-angarita/SouthPol_ETC/blob/main/SouthPol_ETC.pdf).
 
 ### Number of pixels in the stellar aperture
 
 The spreadsheet defines the number of pixels covered by the source as:
 
-\[
-N_{\rm pix}
-=
-\left(
-\frac{\mathrm{seeing}}{\mathrm{pixel\ scale}}
-\right)^2.
-\]
+$$N_{\rm pix}=\left(\frac{\mathrm{seeing}}{\mathrm{pixel\ scale}}\right)^2.$$
 
 ### Stellar electron rate
 
 The stellar count rate is:
 
-\[
-\frac{dN_\star}{dt}
-=
-Q
-\cdot
-10^{-0.4(m+39.39)}
-\cdot
-\frac{\pi}{4}
-\cdot
-D^2
-\cdot
-\Delta\lambda
-\cdot
-\frac{10^7}{3.6\times10^{-12}}
-\cdot
-\frac{1}{2}.
-\]
+$$
+\frac{dN_\star}{dt}=Q\cdot10^{-0.4(m+39.39)}\cdot\frac{\pi}{4}\cdotD^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdot\frac{1}{2}.$$
 
 where:
 
-- \(Q\) is the total throughput;
-- \(m\) is stellar magnitude;
-- \(D\) is effective telescope diameter in cm;
-- \(\Delta\lambda\) is filter bandwidth in Angstrom;
-- the factor \(1/2\) is retained from the original SouthPol spreadsheet.
+- $$Q$$ is the total throughput;
+- $$m$$ is stellar magnitude;
+- $$D$$ is effective telescope diameter in cm;
+- $$\Delta\lambda$$ is filter bandwidth in Angstrom;
+- the factor $$1/2$$ is retained from the original SouthPol spreadsheet.
 
 ### Sky electron rate per pixel
 
-\[
-\frac{dN_{\rm sky}}{dt\,{\rm pix}}
-=
-Q
-\cdot
-10^{-0.4(\mu_{\rm sky}+38.52)}
-\cdot
-\frac{\pi}{4}
-\cdot
-D^2
-\cdot
-\Delta\lambda
-\cdot
-\frac{10^7}{3.6\times10^{-12}}
-\cdot
-s^2,
-\]
+$$\frac{dN_{\rm sky}}{dt\,{\rm pix}}=Q\cdot10^{-0.4(\mu_{\rm sky}+38.52)}\cdot\frac{\pi}{4}\cdotD^2\cdot\Delta\lambda\cdot\frac{10^7}{3.6\times10^{-12}}\cdots^2,$$
 
 where \(\mu_{\rm sky}\) is the sky brightness in mag arcsec\(^{-2}\), and \(s\) is the pixel scale in arcsec pixel\(^{-1}\).
 
@@ -314,24 +250,8 @@ where \(\mu_{\rm sky}\) is the sky brightness in mag arcsec\(^{-2}\), and \(s\) 
 
 The S/N expression implemented from the spreadsheet is:
 
-\[
-S/N
-=
-\frac{
-\left(dN_\star/dt\right)t
-}{
-\sqrt{
-\left(dN_\star/dt\right)t
-+
-2N_{\rm pix}
-\left[
-\left(dN_{\rm sky}/dt/{\rm pix}\right)t
-+
-R^2
-\right]
-}
-}.
-\]
+$$S/N=\frac{\left(dN_\star/dt\right)t}{\sqrt{\left(dN_\star/dt\right)t+2N_{\rm pix}\left[
+\left(dN_{\rm sky}/dt/{\rm pix}\right)t+R^2\right]}}.$$
 
 Here:
 
@@ -343,20 +263,11 @@ Here:
 
 For \(N_{\rm plate}\) plate positions:
 
-\[
-\sigma_P[\%]
-=
-\frac{100}
-{\sqrt{N_{\rm plate}}\,S/N}.
-\]
+$$\sigma_P[\%]=\frac{100}{\sqrt{N_{\rm plate}}\,S/N}.$$
 
 For the default eight-position configuration:
 
-\[
-\sigma_P[\%]
-=
-\frac{100}{\sqrt{8}\,S/N}.
-\]
+$$\sigma_P[\%]=\frac{100}{\sqrt{8}\,S/N}$$
 
 ---
 
@@ -368,51 +279,25 @@ This ETC additionally estimates the peak count level from a circular two-dimensi
 
 The Gaussian width is:
 
-\[
-\sigma_{\rm PSF}
-=
-\frac{\mathrm{FWHM}}{2.355}.
-\]
+$$\sigma_{\rm PSF}=\frac{\mathrm{FWHM}}{2.355}.$$
 
 The fraction of the total stellar flux expected in the central pixel is approximated by:
 
-\[
-f_{\rm peak}
-=
-\frac{s^2}
-{2\pi\sigma_{\rm PSF}^2},
-\]
+$$f_{\rm peak}=\frac{s^2}{2\pi\sigma_{\rm PSF}^2},$$
 
 where \(s\) is the pixel scale in arcsec pixel\(^{-1}\).
 
 Thus:
 
-\[
-N_{\rm peak,\star}
-=
-N_{\rm object}
-\cdot
-f_{\rm peak}.
-\]
+$$N_{\rm peak,\star}=N_{\rm object}\cdotf_{\rm peak}.$$
 
 The predicted peak object-plus-sky signal is:
 
-\[
-N_{\rm peak,total}
-=
-N_{\rm peak,\star}
-+
-N_{\rm sky,pixel}.
-\]
+$$N_{\rm peak,total}=N_{\rm peak,\star}+N_{\rm sky,pixel}.$$
 
 If the detector gain is known:
 
-\[
-N_{\rm peak,ADU}
-=
-\frac{N_{\rm peak,total}}
-{\mathrm{gain}}.
-\]
+$$N_{\rm peak,ADU}=\frac{N_{\rm peak,total}}{\mathrm{gain}}.$$
 
 ### Important limitations
 
@@ -442,9 +327,7 @@ The ETC checks two detector limits when they are configured:
 
 The default warning threshold is 90% of the selected limit:
 
-\[
-f_{\rm warning} = 0.90.
-\]
+$$f_{\rm warning} = 0.90.$$
 
 A saturation warning refers to **one individual frame**. If a total observing sequence is divided into shorter exposures, the S/N of the combined sequence may be similar, but the peak level and saturation risk per frame are lower.
 
@@ -461,41 +344,39 @@ Example:
 ```python
 from etc_model import Instrument
 
-southpol_v = Instrument(
-    name="SouthPol V",
-    throughput=0.81,
-    pixel_scale=0.3713,
-    read_noise=5.0,
-    sky_mag=22.0,
-    telescope_diameter=65.0,
-    filter_width=786.0,
-    n_plate=8,
-    stellar_factor=0.5,
+southpol_v = Instrument(name="SouthPol V",
+						throughput=0.81,
+						pixel_scale=0.3713,
+						read_noise=5.0,
+						sky_mag=22.0,
+						telescope_diameter=65.0,
+						filter_width=786.0,
+						n_plate=8,
+						stellar_factor=0.5,
 
-    # Replace with measured detector properties.
-    gain_e_per_adu=0.50,
-    full_well_e=100_000.0,
-    linear_limit_adu=50_000.0,
-)
+						# Replace with measured detector properties.
+						gain_e_per_adu=0.50,
+						full_well_e=100_000.0,
+						linear_limit_adu=50_000.0,
+						)
 ```
 
 To support another filter, add a separate configuration:
 
 ```python
-SOUTHPOL_FILTERS["R"] = Instrument(
-    name="SouthPol R",
-    throughput=0.XX,
-    pixel_scale=0.3713,
-    read_noise=5.0,
-    sky_mag=XX.XX,
-    telescope_diameter=65.0,
-    filter_width=XXX.X,
-    n_plate=8,
-    stellar_factor=0.5,
-    gain_e_per_adu=0.XX,
-    full_well_e=XXXXX.0,
-    linear_limit_adu=XXXXX.0,
-)
+SOUTHPOL_FILTERS["R"] = Instrument(name="SouthPol R",
+								   throughput=0.XX,
+								   pixel_scale=0.3713,
+								   read_noise=5.0,
+								   sky_mag=XX.XX,
+								   telescope_diameter=65.0,
+								   filter_width=XXX.X,
+								   n_plate=8,
+  								   stellar_factor=0.5,
+								   gain_e_per_adu=0.XX,
+								   full_well_e=XXXXX.0,
+								   linear_limit_adu=XXXXX.0,
+								   )
 ```
 
 The following values should be determined independently for each filter and observing mode:
@@ -523,13 +404,12 @@ from etc_model import SOUTHPOL_FILTERS, calculate_southpol
 instrument = SOUTHPOL_FILTERS["V"]
 times = np.geomspace(1.0, 3600.0, 300)
 
-curve = calculate_southpol(
-    magnitude=15.0,
-    exposure_time=times,
-    seeing=1.2,
-    instrument=instrument,
-    band="V",
-)
+curve = calculate_southpol(magnitude=15.0,
+						   exposure_time=times,
+						   seeing=1.2,
+						   instrument=instrument,
+						   band="V",
+						   )
 
 plt.figure(figsize=(7, 5))
 plt.plot(curve["exposure_time_s"], curve["snr"])
@@ -547,13 +427,12 @@ plt.show()
 ```python
 magnitudes = np.linspace(8.0, 22.0, 300)
 
-curve = calculate_southpol(
-    magnitude=magnitudes,
-    exposure_time=300.0,
-    seeing=1.2,
-    instrument=instrument,
-    band="V",
-)
+curve = calculate_southpol(magnitude=magnitudes,
+						   exposure_time=300.0,
+						   seeing=1.2,
+						   instrument=instrument,
+						   band="V",
+						   )
 
 plt.figure(figsize=(7, 5))
 plt.plot(curve["magnitude"], curve["snr"])
@@ -568,29 +447,21 @@ plt.show()
 ### Peak level versus exposure time
 
 ```python
-curve = calculate_southpol(
-    magnitude=15.0,
-    exposure_time=times,
-    seeing=1.2,
-    instrument=instrument,
-    band="V",
-)
+curve = calculate_southpol(magnitude=15.0,
+						   exposure_time=times,
+						   seeing=1.2,
+						   instrument=instrument,
+						   band="V",
+						   )
 
 plt.figure(figsize=(7, 5))
 
-plt.plot(
-    curve["exposure_time_s"],
-    curve["peak_total_electrons"],
-    label="Peak object + sky",
-)
+plt.plot(curve["exposure_time_s"], curve["peak_total_electrons"], 
+		 label="Peak object + sky")
 
 if instrument.full_well_e is not None:
-    plt.axhline(
-        instrument.full_well_e,
-        color="red",
-        linestyle="--",
-        label="Configured full well",
-    )
+    plt.axhline(instrument.full_well_e, color="red", linestyle="--",
+    			label="Configured full well")
 
 plt.xscale("log")
 plt.yscale("log")
@@ -641,41 +512,19 @@ from etc_model import SOUTHPOL_FILTERS, calculate_southpol
 
 
 def test_v12_300s_spreadsheet_reference():
-    result = calculate_southpol(
-        magnitude=12.0,
-        exposure_time=300.0,
-        seeing=1.2,
-        instrument=SOUTHPOL_FILTERS["V"],
-        band="V",
-    )
-
+    result = calculate_southpol(magnitude=12.0,
+    							exposure_time=300.0,
+    							seeing=1.2,
+    							instrument=SOUTHPOL_FILTERS["V"],
+    							band="V",
+    							)
     row = result.iloc
-
-    assert np.isclose(row["npix"], 10.44509979, rtol=1e-8)
-
-    assert np.isclose(
-        row["stellar_rate_e_per_s"],
-        8156.271299,
-        rtol=1e-8,
-    )
-
-    assert np.isclose(
-        row["sky_rate_e_per_s_per_pix"],
-        0.501154411,
-        rtol=1e-8,
-    )
-
-    assert np.isclose(
-        row["snr"],
-        1563.081522,
-        rtol=1e-7,
-    )
-
-    assert np.isclose(
-        row["sigma_P_percent"],
-        0.022618999,
-        rtol=1e-7,
-    )
+    
+    assert np.isclose(row["npix"], 18.367347, rtol=1e-6)
+    assert np.isclose(row["stellar_rate_e_per_s"], 19304.78414, rtol=1e-6)
+    assert np.isclose(row["sky_rate_e_per_s_per_pix"],  0.674545, rtol=1e-6)
+    assert np.isclose(row["snr"], 2404.806674, rtol=1e-6)
+    assert np.isclose(row["sigma_P_percent"], 0.014701946, rtol=1e-8)
 ```
 
 ---
