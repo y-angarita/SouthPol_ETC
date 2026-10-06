@@ -170,10 +170,8 @@ with plot_col_3:
                                )
 
     fig, ax = plt.subplots(figsize=(5, 4))
-    ax.plot(curve["exposure_time_s"], curve["peak_total_electrons"], color="tab:red", lw=2)
-
-    if instrument.full_well_e is not None:
-        ax.axhline(instrument.full_well_e, color="black", ls="--", label="Full-well limit")
+    ax.plot(curve["exposure_time_s"], curve["peak_total_electrons"], 
+    		color="tab:red", lw=2)
         
     if instrument.linear_limit_adu is not None:
         ax.axhline(instrument.linear_limit_adu, color="tab:orange", ls="--",
