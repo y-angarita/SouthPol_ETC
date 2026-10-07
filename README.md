@@ -2,6 +2,8 @@
 
 A Python-based exposure-time calculator (ETC) for **SouthPol** optical polarimetric observations. The routine is based on the ETC developed by Prof. Antonio Mario Magalhaes (Copyright April 2026).
 
+**Live app:** https://y-angarita-southpol-etc-app-tegc7o.streamlit.app/
+
 The calculator estimates:
 
 - Stellar photoelectron rate
